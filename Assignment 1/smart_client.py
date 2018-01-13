@@ -5,10 +5,20 @@
 # V00831568
 
 import argparse
+import re
 import socket
 import ssl
 import sys
 from urllib.parse import urlparse
+
+class Cookie:
+    def __init__(self, name, key, domain_name):
+        self.name = name
+        self.key = key
+        self.domain_name = domain_name
+    
+    def __str__(self):
+        return "name: " + self.name + ", key: " + self.key + ", domain name: " + self.domain_name
 
 def print_request():
     request = None
@@ -29,15 +39,7 @@ def print_request():
     print("---Response body---")
     print(request_body)
 
-def main():
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument("uri")
-    # args = parser.parse_args()
-    # uri = args.uri
-    unparsed_uri = "http://web.uvic.ca"
-    parsed_uri = urlparse(unparsed_uri)
-    uri = parsed_uri.netloc
-
+def send_request(uri):
     # Try to resolve host's IP address from URI
     try:
         ip_address = socket.gethostbyname(uri)
@@ -75,32 +77,63 @@ def main():
 def connect_and_send_message(s, ip_address, use_https):
     if use_https:
         port = 443
-        connected_msg = "Connected to " + ip_address + " using HTTPS"
     else:
         port = 80
-        connected_msg = "Connected to " + ip_address + " using HTTP"
 
     s.connect((ip_address, port))
-    print(connected_msg)
+    i = 0
+    request_list = [b"GET / HTTP/1.1\r\n\r\n", b"GET / HTTP/1.0\r\n\r\n"]
+    while i < len(request_list):
+        request = request_list[i]
 
-    # Try to send request
-    try:
-        request = b"GET / HTTP/1.1\r\n\r\n"
-        s.sendall(request)
-        print("Sent request: " + str(request))
+        # Try to send request
+        try:
+            s.sendall(request)
+            print(request.decode())
 
-        # s.setblocking(False)
-        while True:
-            response = s.recv(1024*(2**5))
-            if response:
-                print(response)
-                # print(response.decode()[0:100])
-            else:
-                break
+            # s.setblocking(False)
+            return
+            while True:
+                response = s.recv(1024*(2**5))
+                if response:
+                    status_code = int(re.search(r"^(HTTP/1.[0|1])\s(\d+)", response.decode()).group(2))
+                    if status_code == 200:
+                        # Success. No need to continue trying HTTP versions.
+                        print(response.decode())
+                        break
+                    elif status_code == 400:
+                        # Try HTTP/1.0
+                        break
 
-    except socket.error:
-        print("Error sending request. Exiting.")
-        sys.exit()
+                    print(status_code)
+                else:
+                    print('No response')
+                    # break
+
+            i += 1
+
+        except socket.error:
+            print("Error sending request. Exiting.")
+            sys.exit()
+
+def main():
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument("uri")
+    # args = parser.parse_args()
+    # uri = args.uri
+    unparsed_uri = "http://www.uvic.ca/index.html"
+    parsed_uri = urlparse(unparsed_uri)
+    uri = parsed_uri.netloc
+    print("website: " + uri)
+    send_request(uri)
+    supports_https = "not implemented"
+    http_version = "not implemented"
+    cookies = [Cookie("-", "asdf", "test.com")]
+    print("1. Support of HTTPS: " + supports_https)
+    print("2. The newest HTTP versions that the web server supports: " + http_version)
+    print("3. List of Cookies:")
+    for cookie in cookies:
+        print(cookie)
 
 if __name__ == "__main__":
     main()
