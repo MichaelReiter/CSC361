@@ -39,7 +39,7 @@ def print_request():
     print("---Response body---")
     print(request_body)
 
-def send_request(uri):
+def perform_http(uri):
     # Try to resolve host's IP address from URI
     try:
         ip_address = socket.gethostbyname(uri)
@@ -81,51 +81,45 @@ def connect_and_send_message(s, ip_address, use_https):
         port = 80
 
     s.connect((ip_address, port))
-    i = 0
-    request_list = [b"GET / HTTP/1.1\r\n\r\n", b"GET / HTTP/1.0\r\n\r\n"]
-    while i < len(request_list):
-        request = request_list[i]
 
-        # Try to send request
-        try:
-            s.sendall(request)
-            print(request.decode())
+    # Try to use HTTP/1.1
+    status_code, response = send_request(s=s, request=b"GET / HTTP/1.1\r\n\r\n")
+    if status_code == 200:
+        # Success
+        print("200 OK")
+    elif status_code == 400:
+        # Bad Request. Try to use HTTP/1.0
+        status_code, response = send_request(s=s, request=b"GET / HTTP/1.0\r\n\r\n")
 
-            # s.setblocking(False)
-            return
-            while True:
-                response = s.recv(1024*(2**5))
-                if response:
-                    status_code = int(re.search(r"^(HTTP/1.[0|1])\s(\d+)", response.decode()).group(2))
-                    if status_code == 200:
-                        # Success. No need to continue trying HTTP versions.
-                        print(response.decode())
-                        break
-                    elif status_code == 400:
-                        # Try HTTP/1.0
-                        break
+def send_request(s, request):
+    # Try to send request
+    try:
+        s.sendall(request)
 
-                    print(status_code)
-                else:
-                    print('No response')
-                    # break
+        # s.setblocking(False)
+        while True:
+            response = s.recv(1024*(2**5))
+            if response:
+                status_code = int(re.search(r"^(HTTP/1.[0|1])\s(\d+)", response.decode()).group(2))
+                return status_code, response.decode()
+            else:
+                print('No response')
+                pass
 
-            i += 1
-
-        except socket.error:
-            print("Error sending request. Exiting.")
-            sys.exit()
+    except socket.error:
+        print("Error sending request. Exiting.")
+        sys.exit()
 
 def main():
     # parser = argparse.ArgumentParser()
     # parser.add_argument("uri")
     # args = parser.parse_args()
     # uri = args.uri
-    unparsed_uri = "http://www.uvic.ca/index.html"
+    unparsed_uri = "http://web.uvic.ca"
     parsed_uri = urlparse(unparsed_uri)
     uri = parsed_uri.netloc
     print("website: " + uri)
-    send_request(uri)
+    perform_http(uri)
     supports_https = "not implemented"
     http_version = "not implemented"
     cookies = [Cookie("-", "asdf", "test.com")]
