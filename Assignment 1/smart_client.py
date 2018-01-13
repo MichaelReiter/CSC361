@@ -8,6 +8,7 @@ import argparse
 import socket
 import ssl
 import sys
+from urllib.parse import urlparse
 
 def print_request():
     request = None
@@ -28,7 +29,15 @@ def print_request():
     print("---Response body---")
     print(request_body)
 
-def socket_stuff(uri):
+def main():
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument("uri")
+    # args = parser.parse_args()
+    # uri = args.uri
+    unparsed_uri = "http://web.uvic.ca"
+    parsed_uri = urlparse(unparsed_uri)
+    uri = parsed_uri.netloc
+
     # Try to resolve host's IP address from URI
     try:
         ip_address = socket.gethostbyname(uri)
@@ -55,40 +64,43 @@ def socket_stuff(uri):
             print("OpenSSL version error. Verify that Python 3 is being used.")
 
         ssl_s = ssl.wrap_socket(s)
-        ssl_s.connect((ip_address, 443))
+        connect_and_send_message(s=ssl_s, ip_address=ip_address, use_https=True)
 
-        # Try to send message
-        try:
-            message = b"GET / HTTP/1.1\r\n\r\n"
-            ssl_s.sendall(message)
-            response = ssl_s.recv(1024)
-            
-            while True:
-                response = ssl_s.recv(1024)
-                if response:
-                    print(response.decode())
-                else:
-                    break
-
-            # while True:
-            #     response = ssl_s.recv(1024)
-                # print(response)
-        except socket.error:
-            print("Error sending message. Exiting.")
-            sys.exit()
-
-    except ssl.SSLError as e:
+    except ssl.SSLError:
         # HTTPS failed, thus host is using HTTP
-        print(e)
+        connect_and_send_message(s=s, ip_address=ip_address, use_https=False)             
 
     ssl_s.close()
 
-def main():
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument("uri")
-    # args = parser.parse_args()
-    # socket_stuff(args.uri)
-    socket_stuff("www.uvic.ca")
+def connect_and_send_message(s, ip_address, use_https):
+    if use_https:
+        port = 443
+        connected_msg = "Connected to " + ip_address + " using HTTPS"
+    else:
+        port = 80
+        connected_msg = "Connected to " + ip_address + " using HTTP"
+
+    s.connect((ip_address, port))
+    print(connected_msg)
+
+    # Try to send request
+    try:
+        request = b"GET / HTTP/1.1\r\n\r\n"
+        s.sendall(request)
+        print("Sent request: " + str(request))
+
+        # s.setblocking(False)
+        while True:
+            response = s.recv(1024*(2**5))
+            if response:
+                print(response)
+                # print(response.decode()[0:100])
+            else:
+                break
+
+    except socket.error:
+        print("Error sending request. Exiting.")
+        sys.exit()
 
 if __name__ == "__main__":
     main()
