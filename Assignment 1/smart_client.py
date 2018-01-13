@@ -7,6 +7,7 @@
 import argparse
 import socket
 import ssl
+import sys
 
 def print_request():
     request = None
@@ -31,35 +32,50 @@ def socket_stuff(uri):
     # Try to resolve host's IP address from URI
     try:
         ip_address = socket.gethostbyname(uri)
-    except socket.gaierror as gaie:
-        # Could not resolve host, so exit
-        print(gaie)
+    except socket.gaierror:
+        print("Error resolving host. Exiting.")
         sys.exit()
 
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # Try to create socket
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    except socket.error:
+        print("Error creating socket. Exiting.")
+        sys.exit()
 
     # Try to connect using HTTPS
     try:
         ssl_context = ssl.create_default_context()
 
+        # Try to set application protocols
         try:
             protocols = ["h2", "http/1.1", "http/1.0"]
             ssl_context.set_alpn_protocols(protocols)
-        except NotImplementedError as nie:
-            # OpenSSL version error. Verify that Python 3 is being used.
-            print(nie)
+        except NotImplementedError:
+            print("OpenSSL version error. Verify that Python 3 is being used.")
 
-        ssl_s = ssl.wrap_socket(s, )
+        ssl_s = ssl.wrap_socket(s)
         ssl_s.connect((ip_address, 443))
-        
-        # request = b"HEAD https://uvic.ca\r\n\r\n"
-        request = b"GET / HTTP/1.0\r\n\r\n"
-        ssl_s.send(request)
 
-        while True:
-            response = ssl_s.recv(4096)
-            print(response)
-            # break
+        # Try to send message
+        try:
+            message = b"GET / HTTP/1.1\r\n\r\n"
+            ssl_s.sendall(message)
+            response = ssl_s.recv(1024)
+            
+            while True:
+                response = ssl_s.recv(1024)
+                if response:
+                    print(response.decode())
+                else:
+                    break
+
+            # while True:
+            #     response = ssl_s.recv(1024)
+                # print(response)
+        except socket.error:
+            print("Error sending message. Exiting.")
+            sys.exit()
 
     except ssl.SSLError as e:
         # HTTPS failed, thus host is using HTTP
