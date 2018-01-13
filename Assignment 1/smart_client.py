@@ -20,25 +20,6 @@ class Cookie:
     def __str__(self):
         return "name: " + self.name + ", key: " + self.key + ", domain name: " + self.domain_name
 
-def print_request():
-    request = None
-    header = None
-    request_body = None
-
-    print("---Request begin---")
-    print(request)
-    print("Host: ")
-    print("Connection: Keep-Alive") # part of header?
-    print("\n")
-    print("---Request end---")
-    print("HTTP request sent, awaiting response...")
-    print("\n")
-    print("---Response header---")
-    print(header) # and cookies
-    print("\n")
-    print("---Response body---")
-    print(request_body)
-
 def perform_http(uri):
     # Try to resolve host's IP address from URI
     try:
