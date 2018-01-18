@@ -11,7 +11,7 @@ import ssl
 import sys
 from urllib.parse import urlparse
 
-DEBUG_PRINT_ENABLED = False
+DEBUG_PRINT_ENABLED = True
 
 class Cookie:
     def __init__(self, name, key, domain_name):
@@ -46,7 +46,7 @@ def perform_http(uri):
     status_code, response = send_request(
         ip_address=ip_address,
         request=http_2_request,
-        use_https=True
+        use_https=False
     )
     if status_code == 200:
         # Success
@@ -130,13 +130,13 @@ def send_request(ip_address, request, use_https):
             more_data = s.recv(1024*(2**5))
             response += more_data
             if more_data:
-                if DEBUG_PRINT_ENABLED:
-                    print(response.decode())
                 if status_code == -1:
                     status_code = int(re.search(r"^(HTTP/1.[0|1])\s(\d+)", response.decode()).group(2))
             else:
                 break
-        return status_code, response.decode()
+        if DEBUG_PRINT_ENABLED:
+            print(response.decode()[:1000])
+        return status_code, response.decode("utf-8", "ignore")
 
     except socket.error:
         print("Error sending request. Exiting.")
@@ -174,11 +174,16 @@ def main():
     # parser.add_argument("uri")
     # args = parser.parse_args()
     # uri = args.uri
-    # unparsed_uri = "http://web.uvic.ca"
-    # unparsed_uri = "https://hannahbishop.com"
-    unparsed_uri = "http://www.uvic.ca"
-    parsed_uri = urlparse(unparsed_uri)
-    uri = parsed_uri.netloc
+
+    # unparsed_uri = "web.uvic.ca"
+    # unparsed_uri = "hannahbishop.com"
+    # unparsed_uri = "www.uvic.ca"
+    # parsed_uri = urlparse(unparsed_uri)
+    # uri = parsed_uri.netloc
+
+    # uri = "web.uvic.ca"
+    # uri = "hannahbishop.com"
+    uri = "www.uvic.ca"
     print("website: " + uri)
     supports_https, http_version, cookies = perform_http(uri)
     print("1. Support of HTTPS: " + supports_https)
