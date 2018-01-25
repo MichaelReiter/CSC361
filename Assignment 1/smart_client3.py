@@ -59,13 +59,13 @@ def create_socket_and_connect(url, use_https):
     return sock
 
 
-def send_request(url, path, version, use_https):
+def send_request(url, version, use_https):
     '''
     Sends an HTTP request to provided url.
     Returns response string.
     '''
     sock = create_socket_and_connect(url, use_https)
-    request = ("HEAD " + path + " HTTP/" + version + "\r\nHost: " + url + "\r\n\r\n").encode()
+    request = ("HEAD / HTTP/" + version + "\r\nHost: " + url + "\r\n\r\n").encode()
     sock.sendall(request)
     response = b""
     while True:
@@ -100,15 +100,12 @@ def check_http2_support(url):
     Checks if a URL supports HTTP/2 protocol.
     Returns True or False.
     '''
-    try:
-        ctx = ssl.create_default_context()
-        ctx.set_alpn_protocols(['h2', 'spdy/3', 'http/1.1'])
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        conn = ctx.wrap_socket(sock, server_hostname=url)
-        conn.connect((url, 443))
-        return conn.selected_alpn_protocol() == "h2"
-    except:
-        print("Error checking HTTP/2 support. Exiting.")
+    ctx = ssl.create_default_context()
+    ctx.set_alpn_protocols(['h2', 'spdy/3', 'http/1.1'])
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    conn = ctx.wrap_socket(sock, server_hostname=url)
+    conn.connect((url, 443))
+    return conn.selected_alpn_protocol() == "h2"
 
 
 def get_status_code(response):
@@ -138,22 +135,21 @@ def check_if_supports_https(url):
     Returns "yes" or "no"
     '''
     location = url
-    path = "/"
     i = 0
     while i < MAX_REDIRECTS:
-        response = send_request(location, path, "1.0", use_https=True)
+        response = send_request(location, "1.1", use_https=True)
         status_code = get_status_code(response)
         if status_code in [200, 404, 503, 505]:
-            return "yes"
+            return "yes", response
         elif status_code in [301, 302]:
             i += 1
             new_location = urlparse(re.search(r"Location: (.*)", response).group(1))
             location = new_location.netloc
-            path = new_location.path
+            print("Redirected to " + new_location.scheme + "://" + location)
             if new_location.scheme == "http":
-                return "no"
+                return "no", response
         else:
-            print("Exiting due to unexpected status code: " + str(status_code) + ". Please try rerunning.")
+            print("Exiting due to unexpected status code: " + str(status_code))
             sys.exit()
 
 
@@ -164,13 +160,24 @@ def main():
     cookies.
     '''
     socket.setdefaulttimeout(3)
-    parser = argparse.ArgumentParser()
-    parser.add_argument("url")
-    args = parser.parse_args()
-    url = args.url
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument("url")
+    # args = parser.parse_args()
+    # url = args.url
+
+    # url = "www.cbc.ca"
+    # url = "www.uvic.ca"
+    # url = "www.google.com"
+    # url = "www.mcgill.ca"
+    # url = "www.youtube.com"
+    # url = "www.akamai.com"
+    # url = "www2.gov.bc.ca"
+    # url = "www.python.org"
+    # url = "www.aircanada.com" #ERROR
+    url = "www.bbc.com"
     print("website: " + url)
-    supports_https = check_if_supports_https(url)
-    response = send_request(url, "/", "1.1", supports_https)
+    supports_https, response = check_if_supports_https(url)
+    # response = send_request(url, "1.1", supports_https)
     newest_http_version = get_http_version(url, response)
     cookies = parse_cookies(url, response)
     print("1. Support of HTTPS: " + supports_https)
