@@ -100,12 +100,12 @@ def check_http2_support(url):
     Checks if a URL supports HTTP/2 protocol.
     Returns True or False.
     '''
-    ctx = ssl.create_default_context()
-    ctx.set_alpn_protocols(['h2', 'spdy/3', 'http/1.1'])
+    context = ssl.create_default_context()
+    context.set_alpn_protocols(['h2', 'spdy/3', 'http/1.1'])
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    conn = ctx.wrap_socket(sock, server_hostname=url)
-    conn.connect((url, 443))
-    return conn.selected_alpn_protocol() == "h2"
+    secure_sock = context.wrap_socket(sock, server_hostname=url)
+    secure_sock.connect((url, 443))
+    return secure_sock.selected_alpn_protocol() == "h2"
 
 
 def get_status_code(response):
