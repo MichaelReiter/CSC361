@@ -14,6 +14,6 @@ Instructions for running (for use in a Unix environment)
 
 Notes
 
-- Python 3.4 or greater must be installed.
+- Python 3.6 or greater must be installed.
 - This web client supports 6 HTTP status codes: 200, 404, 503, 505, 301 and 302
 - Occasionally requests will fail for unknown reasons (likely packet loss or server-side issues). Simply retry a couple times and it should resolve itself.
