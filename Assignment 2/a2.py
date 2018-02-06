@@ -1,16 +1,10 @@
-'''
-For each TCP connection, your program needs to provide the following
-statistical results for the whole trace data:
-- the number of reset TCP connections observed in the trace
-- the number of TCP connections that were still open when the trace capture ended
-- the number of complete TCP connections observed in the trace
+# University of Victoria
+# Spring 2018
+# CSC 361 Assignment 2
+# Michael Reiter
+# V00831568
 
-Regarding the complete TCP connections you observed:
-- the minimum, mean, and maximum time durations of the complete TCP connections
-– the minimum, mean, and maximum RTT (Round Trip Time) values of the complete TCP connections
-– the minimum, mean, and maximum number of packets (both directions) sent on the complete TCP connections
-– the minimum, mean, and maximum receive window sizes (both sides) of the complete TCP connections.
-'''
+import argparse
 
 class TCPConnection:
     '''
@@ -29,6 +23,13 @@ class TCPConnection:
         Computes time TCP connection was open
         '''
         return self.end_time - self.start_time
+
+
+def compute_rtt():
+    '''
+    Computes round trip time (RTT) of a TCP connection
+    '''
+    return 0
 
 
 def print_connection_details(connection):
@@ -57,31 +58,36 @@ def main():
     '''
     Analyses a TCP trace file.
     '''
+    parser = argparse.ArgumentParser()
+    parser.add_argument("capfile")
+    args = parser.parse_args()
+    # print(args.capfile)
+
     connections = []
     for i, connection in enumerate(connections):
-        print("Connection " + str(i + 1) + ": ")
+        print("Connection " + str(i + 1) + ":")
         print_connection_details(connection)
         print("+++++++++++++++++++++++++++++++++")
-    
-    print("Total number of complete TCP connections: ")
-    print("Number of reset TCP connections: ")
-    print("Number of TCP connections that were still open when the trace capture ended: \n")
 
-    print("Minimum time durations: ")
-    print("Mean time durations: ")
-    print("Maximum time durations: \n")
+    # print("Total number of complete TCP connections: " + )
+    # print("Number of reset TCP connections: " + )
+    # print("Number of TCP connections that were still open when the trace capture ended: " + __ + "\n")
 
-    print("Minimum RTT values including both send/received: ")
-    print("Mean RTT values including both send/received: ")
-    print("Maximum RTT values including both send/received: \n")
+    # print("Minimum time durations: " + )
+    # print("Mean time durations: " + )
+    # print("Maximum time durations: " + __ + "\n")
 
-    print("Minimum number of packets including both send/received: ")
-    print("Mean number of packets including both send/received: ")
-    print("Maximum number of packets including both send/received: \n")
+    # print("Minimum RTT values including both send/received: " + )
+    # print("Mean RTT values including both send/received: " + )
+    # print("Maximum RTT values including both send/received: " + __ + "\n")
 
-    print("Minimum receive window sizes including both send/received: ")
-    print("Mean receive window sizes including both send/received: ")
-    print("Maximum receive window sizes including both send/received: ")
+    # print("Minimum number of packets including both send/received: " + )
+    # print("Mean number of packets including both send/received: " + )
+    # print("Maximum number of packets including both send/received: " + __ + "\n")
+
+    # print("Minimum receive window sizes including both send/received: " + )
+    # print("Mean receive window sizes including both send/received: " + )
+    # print("Maximum receive window sizes including both send/received: " + )
 
 
 if __name__ == "__main__":
