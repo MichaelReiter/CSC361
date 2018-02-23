@@ -5,6 +5,7 @@
 # V00831568
 
 import argparse
+import pcapy
 
 class TCPConnection:
     '''
@@ -73,21 +74,21 @@ def main():
     # print("Number of reset TCP connections: " + )
     # print("Number of TCP connections that were still open when the trace capture ended: " + __ + "\n")
 
-    # print("Minimum time durations: " + )
-    # print("Mean time durations: " + )
-    # print("Maximum time durations: " + __ + "\n")
+    # print("Minimum time duration: " + )
+    # print("Mean time duration: " + )
+    # print("Maximum time duration: " + __ + "\n")
 
-    # print("Minimum RTT values including both send/received: " + )
-    # print("Mean RTT values including both send/received: " + )
-    # print("Maximum RTT values including both send/received: " + __ + "\n")
+    # print("Minimum RTT value: " + )
+    # print("Mean RTT value: " + )
+    # print("Maximum RTT value: " + __ + "\n")
 
     # print("Minimum number of packets including both send/received: " + )
     # print("Mean number of packets including both send/received: " + )
     # print("Maximum number of packets including both send/received: " + __ + "\n")
 
-    # print("Minimum receive window sizes including both send/received: " + )
-    # print("Mean receive window sizes including both send/received: " + )
-    # print("Maximum receive window sizes including both send/received: " + )
+    # print("Minimum receive window size including both send/received: " + )
+    # print("Mean receive window size including both send/received: " + )
+    # print("Maximum receive window size including both send/received: " + )
 
 
 if __name__ == "__main__":
