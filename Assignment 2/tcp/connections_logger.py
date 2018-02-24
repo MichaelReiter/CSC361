@@ -1,4 +1,4 @@
-from lib.tcp_connection import TCPConnection
+from tcp.connection import TCPConnection
 from typing import List
 
 def print_total_connections(connections: List[TCPConnection]) -> None:

@@ -1,6 +1,6 @@
 import dpkt
-from lib.tcp_connection import TCPConnection
 import pcapy
+from tcp.connection import TCPConnection
 from typing import BinaryIO, List
 
 def read_cap_file(filename: str) -> List[TCPConnection]:

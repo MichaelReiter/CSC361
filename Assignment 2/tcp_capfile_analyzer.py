@@ -7,9 +7,9 @@ V00831568
 """
 
 import argparse
-from lib.tcp_connection import TCPConnection
-from lib.capture_parsing import read_cap_file
-from lib.connections_logger import \
+from tcp.connection import TCPConnection
+from tcp.capture_parsing import read_cap_file
+from tcp.connections_logger import \
     print_complete_tcp_connections, print_connection_details, print_general, print_total_connections
 from typing import List
 
