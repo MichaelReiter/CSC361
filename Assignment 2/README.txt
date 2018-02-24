@@ -14,4 +14,4 @@ Instructions for running (for use in a Unix environment)
 
 Notes
 
-- Python 3.6 or greater must be installed.
+- Python 3.6 or greater must be installed since my code makes use of type hinting and f strings.
