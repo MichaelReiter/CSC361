@@ -8,7 +8,7 @@ V00831568
 
 Instructions for running (for use in a Unix environment)
 
-- To run my code, simply execute `python3 a2.py <trace file name>` from the terminal.
+- To run my code, simply execute `python3 tcp_capfile_analyzer.py <trace file name>` from the terminal.
 
 --------------------------------------------------------------------------
 

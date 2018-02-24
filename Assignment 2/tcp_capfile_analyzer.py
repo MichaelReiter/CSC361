@@ -1,10 +1,10 @@
-'''
+"""
 University of Victoria
 Spring 2018
 CSC 361 Assignment 2
 Michael Reiter
 V00831568
-'''
+"""
 
 import argparse
 from lib.tcp_connection import TCPConnection
@@ -14,9 +14,9 @@ from lib.connections_logger import \
 from typing import List
 
 def main() -> None:
-    '''
+    """
     Analyses a TCP trace file and prints information about its connections
-    '''
+    """
     # parser = argparse.ArgumentParser()
     # parser.add_argument("capfile")
     # args = parser.parse_args()

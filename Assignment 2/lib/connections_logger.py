@@ -2,16 +2,16 @@ from lib.tcp_connection import TCPConnection
 from typing import List
 
 def print_total_connections(connections: List[TCPConnection]) -> None:
-    '''
+    """
     Prints total number of connections
-    '''
+    """
     print(f"Total number of connections: {None}")
 
 
 def print_connection_details(connections: List[TCPConnection]) -> None:
-    '''
+    """
     Prints statistical information about TCP connections
-    '''
+    """
     for i, connection in enumerate(connections):
         print(f"Connection {i + 1}:")
         print(f"Source Address: {connection.source_ip_address}")
@@ -34,19 +34,19 @@ def print_connection_details(connections: List[TCPConnection]) -> None:
 
 
 def print_general(connections: List[TCPConnection]) -> None:
-    '''
+    """
     Prints statistical information about complete, reset and open TCP connections
-    '''
+    """
     print(f"Total number of complete TCP connections: {None}")
     print(f"Number of reset TCP connections: {None}")
     print(f"Number of TCP connections that were still open when the trace capture ended: {None}\n")
 
 
 def print_complete_tcp_connections(connections: List[TCPConnection]) -> None:
-    '''
+    """
     Prints statistical information about TCP connection duration,
     round trip time, packets and window size
-    '''
+    """
     print(f"Minimum time duration: {None}")
     print(f"Mean time duration: {None}")
     print(f"Maximum time duration: {None}\n")

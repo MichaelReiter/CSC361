@@ -4,9 +4,9 @@ import pcapy
 from typing import BinaryIO, List
 
 def read_cap_file(filename: str) -> List[TCPConnection]:
-    '''
+    """
     Returns connections parsed from a TCP trace file
-    '''
+    """
     f: BinaryIO = open(filename, "rb")
     pcap: dpkt.pcap.Reader = dpkt.pcap.Reader(f)
 
