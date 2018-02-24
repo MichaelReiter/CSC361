@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 University of Victoria
 Spring 2018
