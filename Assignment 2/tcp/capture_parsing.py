@@ -36,6 +36,12 @@ def read_cap_file(filename: str) -> List[TCPConnection]:
                 connection.rst_count += 1
             connection.start_time = min(connection.start_time, ts)
             connection.end_time = max(connection.end_time, ts)
+            if source_ip_address == connection.source_ip_address:
+                connection.packets_source_to_destination += 1
+                connection.bytes_source_to_destination += len(tcp.data)
+            else:
+                connection.packets_destination_to_source += 1
+                connection.bytes_destination_to_source += len(tcp.data)
             connections[connection] = connection
         return list(connections)
 
