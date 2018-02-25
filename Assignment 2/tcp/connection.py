@@ -13,8 +13,8 @@ class TCPConnection(object):
         self.destination_ip_address: str = destination_ip_address
         self.source_port: int = source_port
         self.destination_port: int = destination_port
-        self.start_time: float = 0
-        self.end_time: float = 0
+        self.start_time: float = float("inf")
+        self.end_time: float = -float("inf")
         self.syn_count: int = 0
         self.ack_count: int = 0
         self.fin_count: int = 0
@@ -48,6 +48,13 @@ class TCPConnection(object):
         String encoding SYN and FIN counts
         """
         return f"S{self.syn_count}F{self.fin_count}"
+
+    @property
+    def complete(self) -> bool:
+        """
+        A connection is considered complete if it has at least 1 SYN and 1 ACK
+        """
+        return self.syn_count > 0 and self.fin_count > 0
 
     def compute_round_trip_time(self) -> float:
         """
