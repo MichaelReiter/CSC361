@@ -1,26 +1,56 @@
-class TCPConnection:
+class TCPConnection(object):
     """
     A TCP connection parsed from an input trace file.
     Uniquely identified by the 4 tuple
     (source IP address, source port, destination IP address, destination port).
     """
-    def __init__(self) -> None:
-        self.source_ip_address: str = None
-        self.destination_ip_address: str = None
-        self.source_port: int = None
-        self.destination_port: int = None
+    def __init__(self,
+                 source_ip_address: str,
+                 destination_ip_address: str,
+                 source_port: int,
+                 destination_port: int) -> None:
+        self.source_ip_address: str = source_ip_address
+        self.destination_ip_address: str = destination_ip_address
+        self.source_port: int = source_port
+        self.destination_port: int = destination_port
         self.start_time: float = 0
         self.end_time: float = 0
+        self.syn_count: int = 0
+        self.ack_count: int = 0
+        self.fin_count: int = 0
+        self.rst_count: int = 0
 
-    def get_duration(self) -> float:
+    def __eq__(self, other) -> bool:
+        if isinstance(other, self.__class__):
+            ips_match = (set([self.source_ip_address, self.destination_ip_address]) ==
+                set([other.source_ip_address, other.destination_ip_address]))
+            ports_match = (set([self.source_port, self.destination_port]) ==
+                set([self.source_port, self.destination_port]))
+            return ips_match and ports_match
+        return False
+
+    def __hash__(self):
+        return (hash(self.source_ip_address) ^
+                hash(self.destination_ip_address) ^
+                hash(self.source_port) ^
+                hash(self.destination_port))
+
+    @property
+    def duration(self) -> float:
         """
-        Computes time TCP connection was open
+        Time TCP connection was open in milliseconds
         """
         return self.end_time - self.start_time
 
+    @property
+    def status(self) -> str:
+        """
+        String encoding SYN and FIN counts
+        """
+        return f"S{self.syn_count}F{self.fin_count}"
 
-def compute_round_trip_time(connection: TCPConnection) -> float:
-    """
-    Returns round trip time (RTT) of a TCP connection in milliseconds
-    """
-    return 0
+    def compute_round_trip_time(self) -> float:
+        """
+        Returns round trip time (RTT) of a TCP connection in milliseconds
+        """
+        return 0
