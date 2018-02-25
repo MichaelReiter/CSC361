@@ -4,7 +4,7 @@ Spring 2018
 Michael Reiter
 V00831568
 
-## Instructions for running (for use in a Unix environment)
+## Running
 
 - Run by executing `python3 smart_client.py <some url>` from this directory
 
