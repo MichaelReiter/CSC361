@@ -1,3 +1,4 @@
+from operator import attrgetter
 from tcp.connection import TCPConnection
 from typing import List
 
@@ -14,23 +15,24 @@ def print_connection_details(connections: List[TCPConnection]) -> None:
     Prints statistical information about TCP connections
     """
     print("B) Connections' details:\n")
-    for i, connection in enumerate(connections):
+    global_start_time = min(connections, key=attrgetter("start_time")).start_time
+    for i, connection in enumerate(connections[:]):
         print(f"Connection {i + 1}:")
         print(f"Source Address: {connection.source_ip_address}")
         print(f"Destination address: {connection.destination_ip_address}")
         print(f"Source Port: {connection.source_port}")
         print(f"Destination Port: {connection.destination_port}")
         print(f"Status: {connection.status}")
-        # Only if the connection is complete provide the following information
-        print(f"Start time: {connection.start_time}")
-        print(f"End Time: {connection.end_time}")
-        print(f"Duration: {connection.duration}")
-        print(f"Number of packets sent from Source to Destination: {None}")
-        print(f"Number of packets sent from Destination to Source: {None}")
-        print(f"Total number of packets: {None}")
-        print(f"Number of data bytes sent from Source to Destination: {None}")
-        print(f"Number of data bytes sent from Destination to Source: {None}")
-        print(f"Total number of data bytes: {None}")
+        if connection.complete:
+            print(f"Start time: {round(abs(global_start_time - connection.start_time), 5)}")
+            print(f"End Time: {round(abs(global_start_time - connection.end_time), 5)}")
+            print(f"Duration: {round(connection.duration, 5)}")
+            print(f"Number of packets sent from Source to Destination: {None}")
+            print(f"Number of packets sent from Destination to Source: {None}")
+            print(f"Total number of packets: {None}")
+            print(f"Number of data bytes sent from Source to Destination: {None}")
+            print(f"Number of data bytes sent from Destination to Source: {None}")
+            print(f"Total number of data bytes: {None}")
         print("END")
         if i + 1 != len(connections):
             print("+++++++++++++++++++++++++++++++++")
@@ -43,7 +45,7 @@ def print_general(connections: List[TCPConnection]) -> None:
     Prints statistical information about complete, reset and open TCP connections
     """
     print("C) General\n")
-    complete = [c for c in connections if c.syn_count > 0 and c.fin_count > 0]
+    complete = [c for c in connections if c.complete]
     print(f"Total number of complete TCP connections: {len(complete)}")
     reset = [c for c in connections if c.rst_count > 0]
     print(f"Number of reset TCP connections: {len(reset)}\n")
