@@ -34,10 +34,8 @@ def read_cap_file(filename: str) -> List[TCPConnection]:
                 connection.fin_count += 1
             if flag_set(tcp, dpkt.tcp.TH_RST):
                 connection.rst_count += 1
-            if ts < connection.start_time:
-                connection.start_time = ts
-            if ts > connection.end_time:
-                connection.end_time = ts
+            connection.start_time = min(connection.start_time, ts)
+            connection.end_time = max(connection.end_time, ts)
             connections[connection] = connection
         return list(connections)
 

@@ -19,6 +19,10 @@ class TCPConnection(object):
         self.ack_count: int = 0
         self.fin_count: int = 0
         self.rst_count: int = 0
+        self.packets_source_to_destination: int = 0
+        self.packets_destination_to_source: int = 0
+        self.bytes_source_to_destination: int = 0
+        self.bytes_destination_to_source: int = 0
 
     def __eq__(self, other) -> bool:
         if isinstance(other, self.__class__):
@@ -55,6 +59,20 @@ class TCPConnection(object):
         A connection is considered complete if it has at least 1 SYN and 1 ACK
         """
         return self.syn_count > 0 and self.fin_count > 0
+
+    @property
+    def total_packets(self) -> int:
+        """
+        Number of packets sent between source and destination
+        """
+        return self.packets_source_to_destination + self.packets_destination_to_source
+
+    @property
+    def total_bytes(self) -> int:
+        """
+        Number of bytes sent between source and destination
+        """
+        return self.bytes_source_to_destination + self.bytes_destination_to_source
 
     def compute_round_trip_time(self) -> float:
         """
