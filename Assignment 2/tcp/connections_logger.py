@@ -24,7 +24,7 @@ def print_connection_details(connections: List[TCPConnection]) -> None:
         print(f"Source Port: {connection.source_port}")
         print(f"Destination Port: {connection.destination_port}")
         print(f"Status: {connection.status}")
-        if connection.complete:
+        if connection.is_complete:
             print(f"Start time: "
                 f"{round(abs(global_start_time - connection.start_time), DECIMAL_PLACES)}")
             print(f"End Time: "
@@ -52,11 +52,11 @@ def print_general(connections: List[TCPConnection]) -> None:
     Prints statistical information about complete, reset and open TCP connections
     """
     print("C) General\n")
-    complete = [c for c in connections if c.complete]
+    complete = [c for c in connections if c.is_complete]
     print(f"Total number of complete TCP connections: {len(complete)}")
     reset = [c for c in connections if c.rst_count > 0]
     print(f"Number of reset TCP connections: {len(reset)}")
-    incomplete = [c for c in connections if not c.complete]
+    incomplete = [c for c in connections if not c.is_complete]
     print(f"Number of TCP connections that were still open when the trace capture ended: "
         f"{len(incomplete)}\n")
     print("--------------------------------------------------------------------------\n")
@@ -68,32 +68,42 @@ def print_complete_tcp_connections(connections: List[TCPConnection]) -> None:
     round trip time, packets and window size
     """
     print("D) Complete TCP connections:\n")
-    durations = [c.duration for c in connections]
+    durations = [c.duration for c in connections if c.is_complete]
     min_duration = min(durations)
-    mean_duration = sum(durations) / len(connections)
+    mean_duration = sum(durations) / len(durations)
     max_duration = max(durations)
     print(f"Minimum time duration: {round(min_duration, DECIMAL_PLACES)}")
     print(f"Mean time duration: {round(mean_duration, DECIMAL_PLACES)}")
     print(f"Maximum time duration: {round(max_duration, DECIMAL_PLACES)}\n")
-    # round_trip_times = [c.rtt for c in connections]
-    # min_rtt = min(round_trip_times)
-    # mean_rtt = sum(round_trip_times) / len(round_trip_times)
-    # max_rtt = max(round_trip_times)
-    # print(f"Minimum RTT value: {min_rtt}")
-    # print(f"Mean RTT value: {mean_rtt}")
-    # print(f"Maximum RTT value: {max_rtt}\n")
-    packets = [c.total_packets for c in connections]
+    round_trip_times = []
+    for c in connections:
+        if c.is_complete:
+            for rtt in c.round_trip_times:
+                round_trip_times.append(rtt)
+    min_round_trip_time = min(round_trip_times)
+    mean_round_trip_time = sum(round_trip_times) / len(round_trip_times)
+    max_round_trip_time = max(round_trip_times)
+    print(f"Minimum RTT value: {round(min_round_trip_time, DECIMAL_PLACES)}")
+    print(f"Mean RTT value: {round(mean_round_trip_time, DECIMAL_PLACES)}")
+    print(f"Maximum RTT value: {round(max_round_trip_time, DECIMAL_PLACES)}\n")
+    packets = [c.total_packets for c in connections if c.is_complete]
     min_packets = min(packets)
     mean_packets = sum(packets) / len(packets)
     max_packets = max(packets)
     print(f"Minimum number of packets including both send/received: {min_packets}")
-    print(f"Mean number of packets including both send/received: {mean_packets}")
+    print(f"Mean number of packets including both send/received: "
+        f"{round(mean_packets, DECIMAL_PLACES)}")
     print(f"Maximum number of packets including both send/received: {max_packets}\n")
-    # receive_windows = [c.receive_window for c in connections]
-    # min_receive_windows = min(receive_windows)
-    # mean_receive_windows = sum(receive_windows) / len(receive_windows)
-    # max_receive_windows = max(receive_windows)
-    # print(f"Minimum receive window size including both send/received: {min_receive_windows}")
-    # print(f"Mean receive window size including both send/received: {mean_receive_windows}")
-    # print(f"Maximum receive window size including both send/received: {max_receive_windows}\n")
+    receive_windows = []
+    for c in connections:
+        if c.is_complete:
+            for window_size in c.receive_windows:
+                receive_windows.append(window_size)
+    min_receive_windows = min(receive_windows)
+    mean_receive_windows = sum(receive_windows) / len(receive_windows)
+    max_receive_windows = max(receive_windows)
+    print(f"Minimum receive window size including both send/received: {min_receive_windows}")
+    print(f"Mean receive window size including both send/received: "
+        f"{round(mean_receive_windows, DECIMAL_PLACES)}")
+    print(f"Maximum receive window size including both send/received: {max_receive_windows}\n")
     print("--------------------------------------------------------------------------\n")    

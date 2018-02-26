@@ -1,3 +1,5 @@
+from typing import List
+
 class TCPConnection(object):
     """
     A TCP connection parsed from an input trace file.
@@ -23,6 +25,8 @@ class TCPConnection(object):
         self.packets_destination_to_source: int = 0
         self.bytes_source_to_destination: int = 0
         self.bytes_destination_to_source: int = 0
+        self.round_trip_times: List[float] = []
+        self.receive_windows: List[int] = []
 
     def __eq__(self, other) -> bool:
         if isinstance(other, self.__class__):
@@ -54,7 +58,7 @@ class TCPConnection(object):
         return f"S{self.syn_count}F{self.fin_count}"
 
     @property
-    def complete(self) -> bool:
+    def is_complete(self) -> bool:
         """
         A connection is considered complete if it has at least 1 SYN and 1 ACK
         """
