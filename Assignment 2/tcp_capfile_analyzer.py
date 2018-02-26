@@ -8,8 +8,8 @@ V00831568
 """
 
 import argparse
-from tcp.connection import TCPConnection
 from tcp.capture_parsing import read_cap_file
+from tcp.connection import TCPConnection
 from tcp.connections_logger import (print_complete_tcp_connections,
                                     print_connection_details,
                                     print_general,
