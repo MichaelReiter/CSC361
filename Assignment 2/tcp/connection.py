@@ -77,4 +77,3 @@ class TCPConnection(object):
         Number of bytes sent between source and destination
         """
         return self.bytes_source_to_destination + self.bytes_destination_to_source
-
