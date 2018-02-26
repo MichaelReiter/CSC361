@@ -46,7 +46,7 @@ class TCPConnection(object):
     @property
     def duration(self) -> float:
         """
-        Time TCP connection was open in milliseconds
+        Time TCP connection was open in seconds
         """
         return self.end_time - self.start_time
 
@@ -78,8 +78,3 @@ class TCPConnection(object):
         """
         return self.bytes_source_to_destination + self.bytes_destination_to_source
 
-    def compute_round_trip_time(self) -> float:
-        """
-        Returns round trip time (RTT) of a TCP connection in milliseconds
-        """
-        return 0
