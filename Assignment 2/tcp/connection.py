@@ -33,7 +33,7 @@ class TCPConnection(object):
             ips_match = (set([self.source_ip_address, self.destination_ip_address]) ==
                 set([other.source_ip_address, other.destination_ip_address]))
             ports_match = (set([self.source_port, self.destination_port]) ==
-                set([self.source_port, self.destination_port]))
+                set([other.source_port, other.destination_port]))
             return ips_match and ports_match
         return False
 
