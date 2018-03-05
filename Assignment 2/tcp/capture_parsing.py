@@ -1,7 +1,7 @@
 import dpkt
 import socket
 from tcp.connection import TCPConnection
-from typing import BinaryIO, Dict, List, Set
+from typing import Dict, List
 
 def read_cap_file(filename: str) -> List[TCPConnection]:
     """
