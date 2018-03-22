@@ -8,16 +8,18 @@ V00831568
 """
 
 import argparse
+from traceroute.parse import read_trace_file
 from traceroute.results_logger import print_results
 
 def main() -> None:
     """
     Analyzes the trace of IP datagrams created by traceroute
     """
-    parser = argparse.ArgumentParser()
-    parser.add_argument("address")
-    args = parser.parse_args()
-    print_results()
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument("tracefile")
+    # args = parser.parse_args()
+    results = read_trace_file("/Users/michael/Dropbox/Programming/361/Assignment 3/traces/trace1.pcapng")
+    print_results(*results)
 
 if __name__ == "__main__":
     main()
