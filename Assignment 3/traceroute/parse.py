@@ -11,8 +11,9 @@ def read_trace_file(filename: str) -> (str, str, List[str], Dict[int, str]):
     """
     with open(filename, "rb") as f:
         pcap = dpkt.pcapng.Reader(f)
-        intermediate_ip_addresses = []
+        intermediate_ip_addresses = set()
         protocols = {}
+        test = []
         for ts, buf in pcap:
             eth = dpkt.ethernet.Ethernet(buf)
             ip = eth.data
@@ -23,7 +24,12 @@ def read_trace_file(filename: str) -> (str, str, List[str], Dict[int, str]):
                     destination_ip_address = socket.inet_ntoa(ip.dst)
                 if ip.p in ip_protocol_map:
                     protocols[ip.p] = ip_protocol_map[ip.p]
-                # if ip ttl exceeded:
-                #     intermediate_ip_addresses.append(socket.inet_ntoa(ip.src))
+                else:
+                    protocols[ip.p] = "Unknown protocol"
+                # TTL exceeded: add intermediate (hop) IP address
+                test.append(ip)
+                if type(ip.data) == dpkt.icmp.ICMP and ip.data.type == 11:
+                    intermediate_ip_addresses.add(socket.inet_ntoa(ip.src))
+                    # print(f"{ip.ttl}: {socket.inet_ntoa(ip.src)}")
 
-    return source_ip_address, destination_ip_address, intermediate_ip_addresses, protocols
+    return source_ip_address, destination_ip_address, list(intermediate_ip_addresses), protocols
