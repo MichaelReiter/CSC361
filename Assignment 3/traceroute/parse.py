@@ -3,6 +3,7 @@ import re
 import socket
 from traceroute.fragment import DatagramFragment
 from traceroute.ip_protocols import ip_protocol_map
+from traceroute.packet import Packet
 from traceroute.results_logger import print_results
 from typing import Dict, List
 
@@ -19,17 +20,17 @@ def read_trace_file(filename: str) -> (str, str, List[str], Dict[int, str]):
         else:
             print("Failed to read pcap or pcapng. Exiting.")
             sys.exit()
+
         protocols = {}
+        packets = {}
+        datagrams = {}
+        fragment_ids = {}
         max_ttl = 0
         source_node_ip_address = ""
         ultimate_destination_node_ip_address = ""
         intermediate_ip_addresses = []
-        intermediate_ip_addresses_set = set()
-        packets = {}
-        ttl_counts = [0] * 100
-        ttl_probe_count = 0
-        datagrams = {}
-        fragment_ids = {}
+        ttl_counts = [0] * 1024
+        ttl_probes = 0
 
         for ts, buf in pcap:
             eth = dpkt.ethernet.Ethernet(buf)
@@ -40,7 +41,7 @@ def read_trace_file(filename: str) -> (str, str, List[str], Dict[int, str]):
                 continue
 
             if ip.ttl == 1 and max_ttl == 1 and is_valid(ip.data):
-                ttl_probe_count += 1
+                ttl_probes += 1
 
             # Update protocol set
             if ip.p in ip_protocol_map:
@@ -104,15 +105,12 @@ def read_trace_file(filename: str) -> (str, str, List[str], Dict[int, str]):
                     packets[key]["timestamp"] = ts
                     packets[key]["source_ip_address"] = source_ip_address
                     packets[key]["fragment_id"] = fragment_ids[key]
-                    if icmp_type == 11 and source_ip_address not in intermediate_ip_addresses_set:
+                    if icmp_type == 11 and source_ip_address not in set(intermediate_ip_addresses):
                         ttl = packets[key]["ttl"]
                         ttl_adj = packets[key]["ttl_adj"]
                         intermediate_ip_addresses[(5 * ttl) - 1 + ttl_adj] = source_ip_address
-                        intermediate_ip_addresses_set.add(source_ip_address)
 
-    while "" in intermediate_ip_addresses:
-        intermediate_ip_addresses.remove("")
-
+    intermediate_ip_addresses = [ip for ip in intermediate_ip_addresses if ip != ""]
     round_trip_times = compute_round_trip_times(packets, datagrams)
 
     return (source_node_ip_address,
@@ -126,7 +124,6 @@ def compute_round_trip_times(packets, datagrams) -> Dict[str, List[float]]:
     """
     Calculates round trip times for packets (in seconds)
     """
-    print(packets)
     round_trip_times = {}
     for _, packet in packets.items():
         if "fragment_id" not in packet or "timestamp" not in packet:
