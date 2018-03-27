@@ -2,6 +2,7 @@ import dpkt
 import socket
 from traceroute.ip_protocols import ip_protocol_map
 from traceroute.results_logger import print_results
+from traceroute.fragment import DatagramFragment
 from typing import Dict, List
 
 def read_trace_file(filename: str) -> (str, str, List[str], Dict[int, str]):
@@ -19,10 +20,9 @@ def read_trace_file(filename: str) -> (str, str, List[str], Dict[int, str]):
         intermediate_ip_addresses_set = set()
         outgoing_packets = {}
         ttl_counts = [0] * 100
-        # how many probes used "per ttl"
         ttl_probe_count = 0
         datagrams = {}
-        fragment_id_map = {}
+        fragment_ids = {}
 
         for ts, buf in pcap:
             eth = dpkt.ethernet.Ethernet(buf)
@@ -32,7 +32,10 @@ def read_trace_file(filename: str) -> (str, str, List[str], Dict[int, str]):
             if type(ip) is not dpkt.ip.IP:
                 continue
 
-            # Add protocol to set
+            if ip.ttl == 1 and max_ttl == 1 and is_valid(ip.data):
+                ttl_probe_count += 1
+
+            # Update protocol set
             if ip.p in ip_protocol_map:
                 protocols[ip.p] = ip_protocol_map[ip.p]
             else:
@@ -40,39 +43,28 @@ def read_trace_file(filename: str) -> (str, str, List[str], Dict[int, str]):
 
             source_ip_address = socket.inet_ntoa(ip.src)
             destination_ip_address = socket.inet_ntoa(ip.dst)
-            current_ttl = ip.ttl
 
-            if current_ttl == max_ttl + 1 and is_valid(ip.data):
-                max_ttl = current_ttl
-                if current_ttl == 1:
+            # Set source node and ultimate destination IP addresses
+            if ip.ttl == max_ttl + 1 and is_valid(ip.data):
+                max_ttl = ip.ttl
+                if ip.ttl == 1:
                     source_node_ip_address = source_ip_address
                     ultimate_destination_node_ip_address = destination_ip_address
 
-            if current_ttl == 1 and max_ttl == 1 and is_valid(ip.data):
-                ttl_probe_count += 1
-
-            # from source node
             if (source_ip_address == source_node_ip_address and
                 destination_ip_address == ultimate_destination_node_ip_address and
-                current_ttl <= max_ttl + 1):
+                ip.ttl <= max_ttl + 1):
                 fragment_id = ip.id
-                frag_offset = 8 * (ip.off & dpkt.ip.IP_OFFMASK)
+                fragment_offset = 8 * (ip.off & dpkt.ip.IP_OFFMASK)
                 if fragment_id not in datagrams:
-                    datagrams[fragment_id] = {
-                        'count': 0,
-                        'offset': 0,
-                        'send_times': []
-                    }
-                if mf_flag_set(ip) or frag_offset > 0:
-                    datagrams[fragment_id]['count'] += 1
-                    datagrams[fragment_id]['offset'] = frag_offset
-                datagrams[fragment_id]['send_times'].append(ts)
+                    datagrams[fragment_id] = DatagramFragment()
+                if mf_flag_set(ip) or fragment_offset > 0:
+                    datagrams[fragment_id].count += 1
+                    datagrams[fragment_id].offset = fragment_offset
+                datagrams[fragment_id].send_times.append(ts)
 
-                intermediate_ip_addresses.append("") # placeholder to be filled in
-                intermediate_ip_addresses.append("") # placeholder to be filled in
-                intermediate_ip_addresses.append("") # placeholder to be filled in
-                intermediate_ip_addresses.append("") # placeholder to be filled in
-                intermediate_ip_addresses.append("") # placeholder to be filled in
+                for i in range(5):
+                    intermediate_ip_addresses.append("")
 
                 key = -1
                 if is_udp(ip.data):
@@ -80,7 +72,7 @@ def read_trace_file(filename: str) -> (str, str, List[str], Dict[int, str]):
                 elif is_icmp(ip.data, 8):
                     key = ip.data['echo'].seq
                 if key != -1:
-                    fragment_id_map[key] = fragment_id
+                    fragment_ids[key] = fragment_id
                     outgoing_packets[key] = {
                         'ttl': ip.ttl,
                         'ttl_adj': ttl_counts[ip.ttl]
@@ -90,13 +82,10 @@ def read_trace_file(filename: str) -> (str, str, List[str], Dict[int, str]):
             elif destination_ip_address == source_node_ip_address and is_icmp(ip.data):
                 icmp = ip.data
                 icmp_type = icmp.type
-                data_packet = icmp.data
                 if icmp_type == 0 or icmp_type == 8:
-                    # handle ping reply case
-                    seq = data_packet.seq
-                    outgoing_packets[seq]['reply_time'] = ts
-                    outgoing_packets[seq]['ip'] = source_ip_address
-                    outgoing_packets[seq]['fragment_id'] = fragment_id_map[seq]
+                    outgoing_packets[icmp.data.seq]['reply_time'] = ts
+                    outgoing_packets[icmp.data.seq]['ip'] = source_ip_address
+                    outgoing_packets[icmp.data.seq]['fragment_id'] = fragment_ids[icmp.data.seq]
                     continue
 
                 data_packet = icmp.data.data.data
@@ -108,22 +97,37 @@ def read_trace_file(filename: str) -> (str, str, List[str], Dict[int, str]):
                 if key in outgoing_packets:
                     outgoing_packets[key]['reply_time'] = ts
                     outgoing_packets[key]['ip'] = source_ip_address
-                    outgoing_packets[key]['fragment_id'] = fragment_id_map[key]
+                    outgoing_packets[key]['fragment_id'] = fragment_ids[key]
                     if icmp_type == 11 and source_ip_address not in intermediate_ip_addresses_set:
                         ttl = outgoing_packets[key]['ttl']
                         ttl_adj = outgoing_packets[key]['ttl_adj']
                         intermediate_ip_addresses[(ttl * 5) - 1 + ttl_adj] = source_ip_address
                         intermediate_ip_addresses_set.add(source_ip_address)
 
-    # remove empty strings from ip list (packets sent out which didn't return from an intermediate host)
-    while "" in intermediate_ip_addresses: intermediate_ip_addresses.remove("")
+    while "" in intermediate_ip_addresses:
+        intermediate_ip_addresses.remove("")
+
+    round_trip_times = {}
+    for _, packet in outgoing_packets.items():
+        if 'fragment_id' not in packet:
+            continue
+        fragment_id = packet['fragment_id']
+        send_times = datagrams[fragment_id].send_times
+        if 'reply_time' not in packet:
+            continue
+        reply_time = packet['reply_time']
+        ip = packet['ip']
+        if ip not in round_trip_times:
+            round_trip_times[ip] = []
+        for send_time in send_times:
+            round_trip_times[ip].append(reply_time - send_time)
 
     return (source_node_ip_address,
             ultimate_destination_node_ip_address,
             list(intermediate_ip_addresses),
             protocols,
-            0,
-            0)
+            datagrams,
+            round_trip_times)
 
 def mf_flag_set(ip: dpkt.ip.IP) -> bool:
     """

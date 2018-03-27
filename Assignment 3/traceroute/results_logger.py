@@ -1,16 +1,19 @@
 from typing import Dict, List
+from statistics import mean, pstdev
 
-def print_results(source_ip_address: str,
-                  destination_ip_address: str,
+DECIMAL_PLACES = 5
+
+def print_results(source_node_ip_address: str,
+                  ultimate_destination_ip_address: str,
                   intermediate_ip_addresses: List[str],
                   protocols: Dict[int, str],
-                  number_of_fragments: int,
-                  last_fragment_offset: int) -> None:
+                  datagrams,
+                  round_trip_times: Dict[str, List[float]]) -> None:
     """
     Prints details of a parsed traceroute file, such as IP addresses and protocols
     """
-    print(f"The IP address of the source node: {source_ip_address}")
-    print(f"The IP address of ultimate destination node: {destination_ip_address}")
+    print(f"The IP address of the source node: {source_node_ip_address}")
+    print(f"The IP address of ultimate destination node: {ultimate_destination_ip_address}")
     print("The IP addresses of the intermediate destination nodes:")
     for i, address in enumerate(intermediate_ip_addresses):
         if i == len(intermediate_ip_addresses) - 1:
@@ -20,11 +23,12 @@ def print_results(source_ip_address: str,
     # print("\nThe values in the protocol field of IP headers:")
     # for key in sorted(protocols.keys()):
     #     print(f"\t{key}:\t{protocols[key]}")
-    # print(f"\nThe number of fragments created from the original datagram is: "
-    #     f"{number_of_fragments}")
-    # print(f"The offset of the last fragment is: {last_fragment_offset}\n")
-    # for address in intermediate_ip_addresses:
-    #     rtt = 0
-    #     stdev = 0
-    #     print(f"The avg RRT between {source_ip_address} and {address} is: {rtt} ms, "
-    #         f"the s.d. is: {stdev} ms")
+    # for fragment_id, fragment in datagrams.items():
+    #     print(f"\nThe number of fragments created from the original datagram "
+    #         f"{fragment_id} is: {fragment.count}")
+    #     print(f"The offset of the last fragment is: {fragment.offset}")
+    # print("")
+    # for destination_ip_address, rtts in round_trip_times.items():
+    #     print(f"The avg RRT between {source_node_ip_address} and {destination_ip_address} is: "
+    #         f"{round(mean(rtts), DECIMAL_PLACES)} ms, "
+    #         f"the s.d. is: {round(pstdev(rtts), DECIMAL_PLACES)} ms")
