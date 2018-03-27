@@ -15,10 +15,10 @@ def main() -> None:
     """
     Analyzes the trace of IP datagrams created by traceroute
     """
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument("tracefile")
-    # args = parser.parse_args()
-    results = read_trace_file("/Users/michael/Dropbox/Programming/361/Assignment 3/traces/trace1.pcapng")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("tracefile")
+    args = parser.parse_args()
+    results = read_trace_file(args.tracefile)
     print_results(*results)
 
 if __name__ == "__main__":
