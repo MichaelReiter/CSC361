@@ -1,5 +1,6 @@
-from typing import Dict, List
 from statistics import mean, pstdev
+from traceroute.fragment import DatagramFragment
+from typing import Dict, List
 
 DECIMAL_PLACES = 2
 
@@ -7,7 +8,7 @@ def print_results(source_node_ip_address: str,
                   ultimate_destination_ip_address: str,
                   intermediate_ip_addresses: List[str],
                   protocols: Dict[int, str],
-                  datagrams,
+                  datagrams: Dict[int, DatagramFragment],
                   round_trip_times: Dict[str, List[float]]) -> None:
     """
     Prints details of a parsed traceroute file, such as IP addresses and protocols

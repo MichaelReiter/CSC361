@@ -1,8 +1,8 @@
 import dpkt
 import socket
+from traceroute.fragment import DatagramFragment
 from traceroute.ip_protocols import ip_protocol_map
 from traceroute.results_logger import print_results
-from traceroute.fragment import DatagramFragment
 from typing import Dict, List
 
 def read_trace_file(filename: str) -> (str, str, List[str], Dict[int, str]):
