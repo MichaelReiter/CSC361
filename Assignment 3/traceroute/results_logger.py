@@ -24,10 +24,12 @@ def print_results(source_node_ip_address: str,
     print("\nThe values in the protocol field of IP headers:")
     for key in sorted(protocols.keys()):
         print(f"\t{key}:\t{protocols[key]}")
+    i = 1
     for fragment_id, fragment in datagrams.items():
         print(f"\nThe number of fragments created from the original datagram "
-            f"{fragment_id} is: {fragment.count}")
+            f"{fragment_id} (D{i}) is: {fragment.count}")
         print(f"The offset of the last fragment is: {fragment.offset}")
+        i += 1
     print("")
     for destination_ip_address, rtts in round_trip_times.items():
         print(f"The avg RRT between {source_node_ip_address} and {destination_ip_address} is: "

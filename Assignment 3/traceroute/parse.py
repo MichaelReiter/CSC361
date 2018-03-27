@@ -25,7 +25,7 @@ def read_trace_file(filename: str) -> (str, str, List[str], Dict[int, str]):
         ultimate_destination_node_ip_address = ""
         intermediate_ip_addresses = []
         intermediate_ip_addresses_set = set()
-        outgoing_packets = {}
+        packets = {}
         ttl_counts = [0] * 100
         ttl_probe_count = 0
         datagrams = {}
@@ -77,57 +77,43 @@ def read_trace_file(filename: str) -> (str, str, List[str], Dict[int, str]):
                 if is_udp(ip.data):
                     key = ip.data.dport
                 elif is_icmp(ip.data, 8):
-                    key = ip.data['echo'].seq
+                    key = ip.data["echo"].seq
                 if key != -1:
                     fragment_ids[key] = fragment_id
-                    outgoing_packets[key] = {
-                        'ttl': ip.ttl,
-                        'ttl_adj': ttl_counts[ip.ttl]
+                    packets[key] = {
+                        "ttl": ip.ttl,
+                        "ttl_adj": ttl_counts[ip.ttl]
                     }
                     ttl_counts[ip.ttl] += 1
 
             elif destination_ip_address == source_node_ip_address and is_icmp(ip.data):
-                icmp = ip.data
-                icmp_type = icmp.type
+                icmp_type = ip.data.type
                 if icmp_type == 0 or icmp_type == 8:
-                    outgoing_packets[icmp.data.seq]['timestamp'] = ts
-                    outgoing_packets[icmp.data.seq]['ip'] = source_ip_address
-                    outgoing_packets[icmp.data.seq]['fragment_id'] = fragment_ids[icmp.data.seq]
+                    packets[ip.data.data.seq]["timestamp"] = ts
+                    packets[ip.data.data.seq]["source_ip_address"] = source_ip_address
+                    packets[ip.data.data.seq]["fragment_id"] = fragment_ids[ip.data.data.seq]
                     continue
 
-                data_packet = icmp.data.data.data
+                packet_data = ip.data.data.data.data
 
-                if is_udp(data_packet):
-                    key = data_packet.dport
-                elif is_icmp(data_packet):
-                    key = data_packet['echo'].seq
-                if key in outgoing_packets:
-                    outgoing_packets[key]['timestamp'] = ts
-                    outgoing_packets[key]['ip'] = source_ip_address
-                    outgoing_packets[key]['fragment_id'] = fragment_ids[key]
+                if is_udp(packet_data):
+                    key = packet_data.dport
+                elif is_icmp(packet_data):
+                    key = packet_data["echo"].seq
+                if key in packets:
+                    packets[key]["timestamp"] = ts
+                    packets[key]["source_ip_address"] = source_ip_address
+                    packets[key]["fragment_id"] = fragment_ids[key]
                     if icmp_type == 11 and source_ip_address not in intermediate_ip_addresses_set:
-                        ttl = outgoing_packets[key]['ttl']
-                        ttl_adj = outgoing_packets[key]['ttl_adj']
-                        intermediate_ip_addresses[(ttl * 5) - 1 + ttl_adj] = source_ip_address
+                        ttl = packets[key]["ttl"]
+                        ttl_adj = packets[key]["ttl_adj"]
+                        intermediate_ip_addresses[(5 * ttl) - 1 + ttl_adj] = source_ip_address
                         intermediate_ip_addresses_set.add(source_ip_address)
 
     while "" in intermediate_ip_addresses:
         intermediate_ip_addresses.remove("")
 
-    round_trip_times = {}
-    for _, packet in outgoing_packets.items():
-        if 'fragment_id' not in packet:
-            continue
-        fragment_id = packet['fragment_id']
-        send_times = datagrams[fragment_id].send_times
-        if 'timestamp' not in packet:
-            continue
-        timestamp = packet['timestamp']
-        ip = packet['ip']
-        if ip not in round_trip_times:
-            round_trip_times[ip] = []
-        for sent in send_times:
-            round_trip_times[ip].append(timestamp - sent)
+    round_trip_times = compute_round_trip_times(packets, datagrams)
 
     return (source_node_ip_address,
             ultimate_destination_node_ip_address,
@@ -135,6 +121,25 @@ def read_trace_file(filename: str) -> (str, str, List[str], Dict[int, str]):
             protocols,
             datagrams,
             round_trip_times)
+
+def compute_round_trip_times(packets, datagrams) -> Dict[str, List[float]]:
+    """
+    Calculates round trip times for packets (in seconds)
+    """
+    print(packets)
+    round_trip_times = {}
+    for _, packet in packets.items():
+        if "fragment_id" not in packet or "timestamp" not in packet:
+            continue
+        fragment_id = packet["fragment_id"]
+        timestamp = packet["timestamp"]
+        source_ip_address = packet["source_ip_address"]
+        send_times = datagrams[fragment_id].send_times
+        if source_ip_address not in round_trip_times:
+            round_trip_times[source_ip_address] = []
+        for time in send_times:
+            round_trip_times[source_ip_address].append(timestamp - time)
+    return round_trip_times
 
 def mf_flag_set(ip: dpkt.ip.IP) -> bool:
     """
