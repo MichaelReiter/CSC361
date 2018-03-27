@@ -11,7 +11,14 @@ def read_trace_file(filename: str) -> (str, str, List[str], Dict[int, str]):
     and protocols parsed from a trace file
     """
     with open(filename, "rb") as f:
-        pcap = dpkt.pcapng.Reader(f)
+        try:
+            pcap = dpkt.pcapng.Reader(f)
+        except ValueError:
+            pcap = dpkt.pcap.Reader(f)
+            print("Switched from reading pcapng files to reading pcap files")
+        except Exception:
+            print("Failed to read pcapng or pcap. Exiting.")
+            sys.exit()
         protocols = {}
         max_ttl = 0
         source_node_ip_address = ""
@@ -83,7 +90,7 @@ def read_trace_file(filename: str) -> (str, str, List[str], Dict[int, str]):
                 icmp = ip.data
                 icmp_type = icmp.type
                 if icmp_type == 0 or icmp_type == 8:
-                    outgoing_packets[icmp.data.seq]['reply_time'] = ts
+                    outgoing_packets[icmp.data.seq]['timestamp'] = ts
                     outgoing_packets[icmp.data.seq]['ip'] = source_ip_address
                     outgoing_packets[icmp.data.seq]['fragment_id'] = fragment_ids[icmp.data.seq]
                     continue
@@ -95,7 +102,7 @@ def read_trace_file(filename: str) -> (str, str, List[str], Dict[int, str]):
                 elif is_icmp(data_packet):
                     key = data_packet['echo'].seq
                 if key in outgoing_packets:
-                    outgoing_packets[key]['reply_time'] = ts
+                    outgoing_packets[key]['timestamp'] = ts
                     outgoing_packets[key]['ip'] = source_ip_address
                     outgoing_packets[key]['fragment_id'] = fragment_ids[key]
                     if icmp_type == 11 and source_ip_address not in intermediate_ip_addresses_set:
@@ -113,14 +120,14 @@ def read_trace_file(filename: str) -> (str, str, List[str], Dict[int, str]):
             continue
         fragment_id = packet['fragment_id']
         send_times = datagrams[fragment_id].send_times
-        if 'reply_time' not in packet:
+        if 'timestamp' not in packet:
             continue
-        reply_time = packet['reply_time']
+        timestamp = packet['timestamp']
         ip = packet['ip']
         if ip not in round_trip_times:
             round_trip_times[ip] = []
-        for send_time in send_times:
-            round_trip_times[ip].append(reply_time - send_time)
+        for sent in send_times:
+            round_trip_times[ip].append(timestamp - sent)
 
     return (source_node_ip_address,
             ultimate_destination_node_ip_address,
