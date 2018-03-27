@@ -10,9 +10,11 @@ Install dependencies by executing `pip install -r requirements.txt` from this di
 
 ## Running
 
-Run by executing `python3 traceroute_analyzer.py <address>` from this directory
+Run by executing `python3 traceroute_analyzer.py <filename.pcapng>` from this directory
 
 ## Notes
 
 - This code was designed for use in a Unix environment
 - Python 3.6 or greater must be installed since my code makes use of type hinting and f strings
+- Input files should be pcapng
+- Some pcap files may also work, but there are no guarantees

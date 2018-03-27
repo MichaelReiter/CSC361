@@ -1,4 +1,5 @@
 import dpkt
+import re
 import socket
 from traceroute.fragment import DatagramFragment
 from traceroute.ip_protocols import ip_protocol_map
@@ -11,13 +12,12 @@ def read_trace_file(filename: str) -> (str, str, List[str], Dict[int, str]):
     and protocols parsed from a trace file
     """
     with open(filename, "rb") as f:
-        try:
-            pcap = dpkt.pcapng.Reader(f)
-        except ValueError:
+        if re.match("^.*\.(pcap)$", filename):
             pcap = dpkt.pcap.Reader(f)
-            print("Switched from reading pcapng files to reading pcap files")
-        except Exception:
-            print("Failed to read pcapng or pcap. Exiting.")
+        elif re.match("^.*\.(pcapng)$", filename):
+            pcap = dpkt.pcapng.Reader(f)
+        else:
+            print("Failed to read pcap or pcapng. Exiting.")
             sys.exit()
         protocols = {}
         max_ttl = 0
