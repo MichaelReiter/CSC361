@@ -13,9 +13,10 @@ def read_trace_file(filename: str) -> (str, str, List[str], Dict[int, str]):
     and protocols parsed from a trace file
     """
     with open(filename, "rb") as f:
-        if re.match("^.*\.(pcap)$", filename):
+        # Handle pcap and pcapng input filetype
+        if re.match(r"^.*\.(pcap)$", filename):
             pcap = dpkt.pcap.Reader(f)
-        elif re.match("^.*\.(pcapng)$", filename):
+        elif re.match(r"^.*\.(pcapng)$", filename):
             pcap = dpkt.pcapng.Reader(f)
         else:
             print("Failed to read pcap or pcapng. Exiting.")
@@ -81,18 +82,17 @@ def read_trace_file(filename: str) -> (str, str, List[str], Dict[int, str]):
                     key = ip.data["echo"].seq
                 if key != -1:
                     fragment_ids[key] = fragment_id
-                    packets[key] = {
-                        "ttl": ip.ttl,
-                        "ttl_adj": ttl_counts[ip.ttl]
-                    }
+                    packets[key] = Packet()
+                    packets[key].ttl = ip.ttl
+                    packets[key].ttl_adj = ttl_counts[ip.ttl]
                     ttl_counts[ip.ttl] += 1
 
             elif destination_ip_address == source_node_ip_address and is_icmp(ip.data):
                 icmp_type = ip.data.type
                 if icmp_type == 0 or icmp_type == 8:
-                    packets[ip.data.data.seq]["timestamp"] = ts
-                    packets[ip.data.data.seq]["source_ip_address"] = source_ip_address
-                    packets[ip.data.data.seq]["fragment_id"] = fragment_ids[ip.data.data.seq]
+                    packets[ip.data.data.seq].timestamp = ts
+                    packets[ip.data.data.seq].source_ip_address = source_ip_address
+                    packets[ip.data.data.seq].fragment_id = fragment_ids[ip.data.data.seq]
                     continue
 
                 packet_data = ip.data.data.data.data
@@ -102,12 +102,12 @@ def read_trace_file(filename: str) -> (str, str, List[str], Dict[int, str]):
                 elif is_icmp(packet_data):
                     key = packet_data["echo"].seq
                 if key in packets:
-                    packets[key]["timestamp"] = ts
-                    packets[key]["source_ip_address"] = source_ip_address
-                    packets[key]["fragment_id"] = fragment_ids[key]
+                    packets[key].timestamp = ts
+                    packets[key].source_ip_address = source_ip_address
+                    packets[key].fragment_id = fragment_ids[key]
                     if icmp_type == 11 and source_ip_address not in set(intermediate_ip_addresses):
-                        ttl = packets[key]["ttl"]
-                        ttl_adj = packets[key]["ttl_adj"]
+                        ttl = packets[key].ttl
+                        ttl_adj = packets[key].ttl_adj
                         intermediate_ip_addresses[(5 * ttl) - 1 + ttl_adj] = source_ip_address
 
     intermediate_ip_addresses = [ip for ip in intermediate_ip_addresses if ip != ""]
@@ -126,11 +126,11 @@ def compute_round_trip_times(packets, datagrams) -> Dict[str, List[float]]:
     """
     round_trip_times = {}
     for _, packet in packets.items():
-        if "fragment_id" not in packet or "timestamp" not in packet:
+        if packet.fragment_id == 0 or packet.timestamp == 0:
             continue
-        fragment_id = packet["fragment_id"]
-        timestamp = packet["timestamp"]
-        source_ip_address = packet["source_ip_address"]
+        fragment_id = packet.fragment_id
+        timestamp = packet.timestamp
+        source_ip_address = packet.source_ip_address
         send_times = datagrams[fragment_id].send_times
         if source_ip_address not in round_trip_times:
             round_trip_times[source_ip_address] = []
