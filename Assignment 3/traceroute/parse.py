@@ -1,6 +1,7 @@
 import dpkt
 import re
 import socket
+import sys
 from traceroute.fragment import DatagramFragment
 from traceroute.ip_protocols import ip_protocol_map
 from traceroute.packet import Packet
@@ -111,21 +112,22 @@ def read_trace_file(filename: str) -> (str, str, List[str], Dict[int, str]):
                         intermediate_ip_addresses[(5 * ttl) - 1 + ttl_adj] = source_ip_address
 
     intermediate_ip_addresses = [ip for ip in intermediate_ip_addresses if ip != ""]
-    round_trip_times = compute_round_trip_times(packets, datagrams)
+    round_trip_times = compute_round_trip_times(packets.values(), datagrams)
 
     return (source_node_ip_address,
             ultimate_destination_node_ip_address,
-            list(intermediate_ip_addresses),
+            intermediate_ip_addresses,
             protocols,
             datagrams,
             round_trip_times)
 
-def compute_round_trip_times(packets, datagrams) -> Dict[str, List[float]]:
+def compute_round_trip_times(packets: List[Packet],
+                             datagrams: Dict[int, DatagramFragment]) -> Dict[str, List[float]]:
     """
     Calculates round trip times for packets (in seconds)
     """
     round_trip_times = {}
-    for _, packet in packets.items():
+    for packet in packets:
         if packet.fragment_id == 0 or packet.timestamp == 0:
             continue
         fragment_id = packet.fragment_id
