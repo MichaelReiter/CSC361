@@ -59,7 +59,7 @@ ip_protocol_map = {
     57: "SKIP",
     58: "IPv6-ICMP",
     59: "IPv6-NoNxt",
-    60: "IPv6-Opts	Destination Options for IPv6	RFC 8200",
+    60: "IPv6-Opts",
     61: "Internal protocol",
     62: "CFTP",
     63: "Local network",
