@@ -25,14 +25,13 @@ def read_trace_file(filename: str) -> (str, str, List[str], Dict[int, str]):
 
         protocols = {}
         packets = {}
-        datagrams = {}
+        fragments = {}
         fragment_ids = {}
         max_ttl = 0
         source_node_ip_address = ""
         ultimate_destination_node_ip_address = ""
         intermediate_ip_addresses = []
-        ttl_counts = [0] * 1024
-        ttl_probes = 0
+        ttls = [0] * 1024
 
         for ts, buf in pcap:
             eth = dpkt.ethernet.Ethernet(buf)
@@ -41,9 +40,6 @@ def read_trace_file(filename: str) -> (str, str, List[str], Dict[int, str]):
             # Filter out non IP packets
             if type(ip) is not dpkt.ip.IP:
                 continue
-
-            if ip.ttl == 1 and max_ttl == 1 and is_valid(ip.data):
-                ttl_probes += 1
 
             # Update protocol set
             if ip.p in ip_protocol_map:
@@ -66,12 +62,12 @@ def read_trace_file(filename: str) -> (str, str, List[str], Dict[int, str]):
                 ip.ttl <= max_ttl + 1):
                 fragment_id = ip.id
                 fragment_offset = 8 * (ip.off & dpkt.ip.IP_OFFMASK)
-                if fragment_id not in datagrams:
-                    datagrams[fragment_id] = DatagramFragment()
+                if fragment_id not in fragments:
+                    fragments[fragment_id] = DatagramFragment()
                 if mf_flag_set(ip) or fragment_offset > 0:
-                    datagrams[fragment_id].count += 1
-                    datagrams[fragment_id].offset = fragment_offset
-                datagrams[fragment_id].send_times.append(ts)
+                    fragments[fragment_id].count += 1
+                    fragments[fragment_id].offset = fragment_offset
+                fragments[fragment_id].send_times.append(ts)
 
                 for i in range(5):
                     intermediate_ip_addresses.append("")
@@ -85,8 +81,8 @@ def read_trace_file(filename: str) -> (str, str, List[str], Dict[int, str]):
                     fragment_ids[key] = fragment_id
                     packets[key] = Packet()
                     packets[key].ttl = ip.ttl
-                    packets[key].ttl_adj = ttl_counts[ip.ttl]
-                    ttl_counts[ip.ttl] += 1
+                    packets[key].ttl_adj = ttls[ip.ttl]
+                    ttls[ip.ttl] += 1
 
             elif destination_ip_address == source_node_ip_address and is_icmp(ip.data):
                 icmp_type = ip.data.type
@@ -112,17 +108,17 @@ def read_trace_file(filename: str) -> (str, str, List[str], Dict[int, str]):
                         intermediate_ip_addresses[(5 * ttl) - 1 + ttl_adj] = source_ip_address
 
     intermediate_ip_addresses = [ip for ip in intermediate_ip_addresses if ip != ""]
-    round_trip_times = compute_round_trip_times(packets.values(), datagrams)
+    round_trip_times = compute_round_trip_times(packets.values(), fragments)
 
     return (source_node_ip_address,
             ultimate_destination_node_ip_address,
             intermediate_ip_addresses,
             protocols,
-            datagrams,
+            fragments,
             round_trip_times)
 
 def compute_round_trip_times(packets: List[Packet],
-                             datagrams: Dict[int, DatagramFragment]) -> Dict[str, List[float]]:
+                             fragments: Dict[int, DatagramFragment]) -> Dict[str, List[float]]:
     """
     Calculates round trip times for packets (in seconds)
     """
@@ -133,7 +129,7 @@ def compute_round_trip_times(packets: List[Packet],
         fragment_id = packet.fragment_id
         timestamp = packet.timestamp
         source_ip_address = packet.source_ip_address
-        send_times = datagrams[fragment_id].send_times
+        send_times = fragments[fragment_id].send_times
         if source_ip_address not in round_trip_times:
             round_trip_times[source_ip_address] = []
         for time in send_times:
